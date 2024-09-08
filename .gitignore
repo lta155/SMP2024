@@ -116,3 +116,4 @@ preliminary_gpt4o.py
 autogen_cache
 config.json
 full_results
+test*
