@@ -117,3 +117,4 @@ autogen_cache
 config.json
 full_results
 test*
+faiss_vectorstore

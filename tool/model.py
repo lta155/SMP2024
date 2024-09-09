@@ -28,8 +28,62 @@ gpt4o=ChatOpenAI(
     api_key=os.getenv("WLAI_API_KEY"),
     base_url=os.getenv("WLAI_BASE_URL"),
     model="gpt-4o",
-    temperature=0.0,
+    temperature=0.3,
 )
+
+
+tof_prompt=ChatPromptTemplate.from_messages([
+            ("system", "你是一个图算法专家，你需要从下面的任务描述中，提取出任务的最终目标，这通常是一个判断，返回True或False。\n1. 使用用英文。2.使用第一人称。3.一句话转述。4.print回答和判断。"), # 指令
+            ("user", """
+<example>
+input:
+Imagine we're constructing a new activity scheduling system for our community rehabilitation center, aimed at promoting social interaction for our clients through various group activities. The activities are represented by nodes, and the direct pairwise overlaps in schedulingdue to shared participants or resourcesare represented by edges between them. Our current activity network is comprised of the following connections: [(0, 1), (0, 2), (1, 2), (1, 3), (1, 4), (4, 5), (3, 6), (5, 7), (3, 8), (5, 9), (3, 10)].
+output:
+Does the graph maintain the AT-free property? print("the graph maintain the AT-free property："+"True" if var else "False")
+<example>
+
+<example>
+input:
+Imagine we have a community network structured like an icosahedral shape, where each point or node represents a family, and the lines connecting these families are their direct relationships. Now, let's consider two families in this network that are not directly connected. We want to ensure that there are multiple lines of support between these two families using other connected families as intermediaries, so that if one line of support is unavailable, others can be used without overburdening any single family. Could you tell me, in this kind of community network, how many separate or independent support pathways we could establish between any two families that do not have a direct connection? It's important to note that no single intermediary family should be a part of more than one pathway to ensure we're distributing the support network evenly without causing strain on any particular family.
+output:
+Can multiple independent support pathways be established between two families that do not have a direct connection? print("the graph have a direct connection："+"True" if var else "False")
+<example>
+
+<example>
+input:
+Use the siblinarity_antichain method to perform community detection on the above network graph, with the Lambda parameter set to 2. Calculate and print the size of each detected sub-community (or 'antichain').This information will help you better analyze and investigate the interaction patterns of these individuals to uncover potential fraudulent activities.
+output:
+Is this graph a directed acyclic graph? print(f"directed acyclic graph："+"True" if var else "False")
+<example>
+
+<example>
+input:
+To ensure that the course scheduling is efficient and meets certain regulatory standards, you are required to evaluate the complexity of the network. Specifically, you need to determine the 'treewidth' of this network, considering it as a chordal graph to facilitate your inspection process. This metric will help you understand the minimum level of connectedness that ensures no course is over-scheduled or under-scheduled due to the way the network is structured.
+output:
+Is this graph a chordal graph? print(f"chordal graph :"+"True" if var else "False")
+<example>
+
+input:
+{question}
+output:
+""")])
+
+cal_prompt=ChatPromptTemplate.from_messages([
+            ("system", "你是一个图算法专家，你需要从下面的任务描述中，提取出任务的最终目标，这通常是一或多个图算法相关的指标。\n1. 使用用英文。2.使用第一人称。3.一句话转述。4.指出结果类型"), # 指令
+            ("user", """
+input:
+{question}
+output:
+""")])
+
+draw_prompt=ChatPromptTemplate.from_messages([
+            ("system", "你是一个图算法专家，你需要从下面的任务描述中，提取出任务的最终目标，这通常是需要绘制一张图算法相关的图片。\n1. 使用用英文。2.使用第一人称。3.一句话转述。4.指出结果类型"), # 指令
+            ("user", """
+input:
+{question}
+output:
+""")])
+
 
 class CodeOutputParser(StrOutputParser):
     def parse(self, text: str) -> str:
