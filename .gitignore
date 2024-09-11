@@ -118,3 +118,8 @@ config.json
 full_results
 test*
 faiss_vectorstore
+agentchat_RetrieveChat*
+OAI_CONFIG_LIST
+.cache
+tmp
+data

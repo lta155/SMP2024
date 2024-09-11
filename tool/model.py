@@ -117,43 +117,85 @@ goal：
 
 goal_runnable=RunnableLambda(prompt123) | gpt4o | StrOutputParser()
 
-
-extract_prompt=ChatPromptTemplate.from_messages([
-    ("system","你是一个实体提取器，仅能提取文本中实体的，你任务提取出文本中的python函数和python库"),
-    ("human","""
-你是一个实体提取器，仅能提取文本中实体的，你任务提取出文本中的图分析相关的python函数和python库，以Json格式返回。函数和库必须是文本中有出现的明确使用的，不是只有描述没有具体名字的，且肯定是英文，并且是图算法相关的，不是载入/绘图/输出等。如果没有函数和库，直接返回空字符串。
-返回的json格式：
+mutil_extract_prompt=ChatPromptTemplate.from_messages([
+    ("system","""
+你是一个图算法提取器，你的任务是从文本中准确提取出图算法有关的python函数/python库/图算法指标，斌遵循一下规则：
+1. 以json格式返回，返回的json格式：
 ```json
-{{"function_name":"","module_name":""}}
+{{"function_name":"","module_name":"","graph algorithm metrics",""}}
 ```
-
+    """),
+    ("human","""
 <example>
 TEXT: 
 想象一下，你遇到了一份详细的 .dot 文件，这份文件就像一张藏宝图，揭示了珍贵珠宝收藏中的复杂关系和联系。这张地图就是“JewelRelations.dot”，其中充满了关于各种珠宝之间互动和接触点的数据。为了评估甚至提升这个收藏的价值，你希望将这些信息从这个 dot 文件转移到一个更易处理的结构中。你会如何优雅地将“JewelRelations.dot”中的数据转置到 NetworkX 的 MultiGraph 或 Graph 对象中？这一战略举措将使你能够以珠宝鉴定师的精湛技艺来操作和探索这些联系。
 OUTPUT: 
-{{"function_name":"","module_name":""}}
+{{"function_name":"","module_name":"","algorithm metrics",""}}
 </example>
 
 <example>
 TEXT: 
 为了更好地跟踪和分析我们社区内的情感变化，可以考虑使用“运行平均值”的概念。想象我们有一个象征性的“情感计”，我们决定在其中记录20的值十次，代表一致的正面输入。在每次输入后，我们将计算当前的平均情感（平均值）和情感变化范围（标准差），以了解集体情感的变化。你能演示如何使用igraph库中的RunningMean.add函数将20添加十次并获得当前的平均值和标准差吗？
 OUTPUT: 
- {{"function_name":"RunningMean.add","module_name":"igraph"}}
+ {{"function_name":"RunningMean.add","module_name":"igraph","algorithm metrics","使用igraph库中的RunningMean.add函数将20添加十次并获得当前的平均值和标准差"}}
 </example>
 
 <example>
 TEXT:
 作为一名网络分析师，你的任务是分析大都市中交通网络的影响和有效性。你有一个包含城市中各个社区之间道路连接信息的数据集。该数据集包括边集[(0, 1), (1, 2), (2, 3), (3, 4), (1, 4)]，表示不同社区之间的道路连接。\n\n你的任务是使用NetworkX库计算从特定社区（对应于ID=1的顶点）到所有其他社区的最短路径，以评估城市交通选项的效率。你将通过利用NetworkX库提供的get_shortest_paths方法来分析城市内不同社区的连通性和可达性。
 OUTPUT:
-{{'function_name': 'get_shortest_paths', 'module_name': 'NetworkX'}}
+{{'function_name': 'get_shortest_paths', 'module_name': 'NetworkX',"algorithm metrics","连通性和可达性"}}
+</example>
+
+
+    """),
+])
+
+extract_prompt=ChatPromptTemplate.from_messages([
+    ("system","你是一个实体提取器，仅能提取文本中实体的，你任务提取出文本中的python函数和python库"),
+    ("human","""
+你是一个实体提取器，仅能提取文本中实体的，你任务提取出文本中的图分析相关的python函数和python库，以Json格式返回。函数和库必须是文本中有出现的明确使用的，不是只有描述没有具体名字的，且肯定是英文，并且是图算法相关的，不是载入/绘图/输出等。如果没有函数和库，直接返回空字符串。
+返回的jsonl格式：
+```json
+[{{"function_name":"","module_name":""}}]
+```
+
+<example>
+TEXT: 
+想象一下，你遇到了一份详细的 .dot 文件，这份文件就像一张藏宝图，揭示了珍贵珠宝收藏中的复杂关系和联系。这张地图就是“JewelRelations.dot”，其中充满了关于各种珠宝之间互动和接触点的数据。为了评估甚至提升这个收藏的价值，你希望将这些信息从这个 dot 文件转移到一个更易处理的结构中。你会如何优雅地将“JewelRelations.dot”中的数据转置到 NetworkX 的 MultiGraph 或 Graph 对象中？这一战略举措将使你能够以珠宝鉴定师的精湛技艺来操作和探索这些联系。
+OUTPUT: 
+[{{"function_name":"","module_name":""}}]
+</example>
+
+<example>
+TEXT: 
+为了更好地跟踪和分析我们社区内的情感变化，可以考虑使用“运行平均值”的概念。想象我们有一个象征性的“情感计”，我们决定在其中记录20的值十次，代表一致的正面输入。在每次输入后，我们将计算当前的平均情感（平均值）和情感变化范围（标准差），以了解集体情感的变化。你能演示如何使用igraph库中的RunningMean.add函数将20添加十次并获得当前的平均值和标准差吗？
+OUTPUT: 
+ [{{"function_name":"RunningMean.add","module_name":"igraph"}}]
+</example>
+
+<example>
+TEXT:
+作为一名网络分析师，你的任务是分析大都市中交通网络的影响和有效性。你有一个包含城市中各个社区之间道路连接信息的数据集。该数据集包括边集[(0, 1), (1, 2), (2, 3), (3, 4), (1, 4)]，表示不同社区之间的道路连接。\n\n你的任务是使用NetworkX库计算从特定社区（对应于ID=1的顶点）到所有其他社区的最短路径，以评估城市交通选项的效率。你将通过利用NetworkX库提供的get_shortest_paths方法来分析城市内不同社区的连通性和可达性。
+OUTPUT:
+[{{'function_name': 'get_shortest_paths', 'module_name': 'NetworkX'}}]
 </example>
 
 <example>
 TEXT:
 想象一下，你正在监督一个项目，试图对齐两个公园的设计：公园A，形状像一个简单的环，有四个检查点；公园B，设计成一个中央枢纽的风格，有五条辐条通向不同的检查点。你的任务是以最有效的方式重新组织公园A，以镜像公园B的布局，就所需的更改而言。在这种情况下，你将使用一个类似于NetworkX的“optimal_edit_paths”函数的复杂规划工具来确定所有将公园A的布局转变为与公园B相同的设计所需的最少修改序列。你能估计一下这些修改序列的总数以及最有效的转换计划的成本吗？
 OUTPUT:
-{{'function_name': 'optimal_edit_paths', 'module_name': 'NetworkX'}}
+[{{'function_name': 'optimal_edit_paths', 'module_name': 'NetworkX'}}]
 </example>
+
+<example>
+TEXT:
+作为一名负责培养这个社区精神福祉的牧师，你需要辨别这些联系的底层结构。为了有效地做到这一点，你将进行类似于使用igraph包中的community_multilevel方法的过程，从而揭示这个无向图中多层次的连接。此外，为了提供一个反映家族谱系中树状层级或会众分支扩展的视觉表示，你可能会使用同一个igraph工具包中的layout_reingold_tilford函数，以一种反映其成员之间自然流动和关系的方式来排列这个网络。
+OUTPUT:
+[{{'function_name': 'community_multilevel', 'module_name': 'igraph'}},{{'function_name': 'layout_reingold_tilford', 'module_name': 'igraph'}}]
+</example>
+
+
 
 TEXT: {text}"""),
 ],)

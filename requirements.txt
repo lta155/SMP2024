@@ -32,3 +32,6 @@ similarity-index-of-label-graph==2.0.1
 tenacity==8.3.0
 thresholdclustering==1.1
 tqdm==4.66.4
+
+
+pyautogen
