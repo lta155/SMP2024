@@ -73,6 +73,8 @@ executor = LocalCommandLineCodeExecutor(
 )
 
 
+
+
 # Create an agent with code executor configuration.
 code_executor_agent = ConversableAgent(
     "code_executor_agent",
@@ -109,17 +111,28 @@ Below is the problem content:
 
 template_draw = """The following is a problem of the type "draw" Your task is to think through the problem step by step, write the necessary code to complete the draw task.
 
+    - If the problem requires you to draw an image, please include the code for drawing the image in the code.
+
 Below is the problem content:
 
 {}"""
 
 template_tof_cal = """The following is a problem of type "multi(True/False, calculations)". Your task is to think through the problem step by step, write the necessary code to solve it, execute the code, and extract the answer from the output.
 
-    - If the problem explicitly requires a single numeric answer, your code must print this single numeric value.
-    - If the problem explicitly requires multiple numeric answers, your code must print these values separated by commas.
-    - If the problem requires a descriptive or analytic answer rather than a numeric one, your code must print the descriptive content before the answer.
+    - This problem requires you to make a judgment first, and then calculate a value based on the judgment result.
+    - You must first make a judgment, then use the print function to output the content and result of your judgment, which will be True or False.
+    - Then, based on the judgment result, calculate a value. You must use the print function to output the meaning and content of the result.
     - For any numeric answers, if the values are decimals, they should be rounded to two decimal places.
     - If the question asks you to make a judgment, you can reply by typing "TRUE" or "FALSE"
+
+Below is the problem content:
+
+{}"""
+
+template_tof_draw = """The following is a problem of type "multi(True/False, draw)".Your task is to think through the problem step by step, write the necessary code to solve it, execute the code, and extract the answer from the output.
+    - If the problem asks you to make a judgment, you can reply by typing "TRUE" or "FALSE"
+    - If the problem asks you to draw a graph, complete the task as requested.
+    - If the question requires you to make multiple judgments, your code must print add specific descriptive content before the corresponding judgments.
 
 Below is the problem content:
 
@@ -136,24 +149,17 @@ Below is the problem content:
 
 {}"""
 
-template_tof_draw = """The following is a problem of type "multi(True/False, draw)".Your task is to think through the problem step by step, write the necessary code to solve it, execute the code, and extract the answer from the output.
-    - If the problem asks you to make a judgment, you can reply by typing "TRUE" or "FALSE"
-    - If the problem asks you to draw a graph, complete the task as requested.
-    - If the question requires you to make multiple judgments, your code must print add specific descriptive content before the corresponding judgments.
-    
-Below is the problem content:
 
-{}"""
 
 d_template = {
     'calculations': template_cal,
     'True/False': template_tof,
     'draw': template_draw,
     'multi(True/False, calculations)': template_tof_cal,
+    'multi(True/False, draw)': template_tof_draw,
     'multi(calculations, True/False)': template_tof_cal,
     'multi(calculations, draw)': template_cal_draw,
     'multi(draw, True/False)':template_tof_draw,
-    'multi(True/False, draw)':template_tof_draw,
     }
 
 if __name__ == '__main__':

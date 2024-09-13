@@ -155,6 +155,7 @@ extract_prompt=ChatPromptTemplate.from_messages([
     ("system","你是一个实体提取器，仅能提取文本中实体的，你任务提取出文本中的python函数和python库"),
     ("human","""
 你是一个实体提取器，仅能提取文本中实体的，你任务提取出文本中的图分析相关的python函数和python库，以Json格式返回。函数和库必须是文本中有出现的明确使用的，不是只有描述没有具体名字的，且肯定是英文，并且是图算法相关的，不是载入/绘图/输出等。如果没有函数和库，直接返回空字符串。
+python库是图算法相关库，只可能是以下几种之一(没有时为空字符串)："cdib","graspologic","igraph","karateclub","littleballoffur","networkx",""
 返回的jsonl格式：
 ```json
 [{{"function_name":"","module_name":""}}]
@@ -195,7 +196,12 @@ OUTPUT:
 [{{'function_name': 'community_multilevel', 'module_name': 'igraph'}},{{'function_name': 'layout_reingold_tilford', 'module_name': 'igraph'}}]
 </example>
 
-
+<example>
+TEXT:
+我们的目标是确保石油运输网络的可靠性，以便即使单个连接失效，系统仍能继续运行。因此，我们需要识别网络的双连通分量，以确定在单点故障情况下仍然保持连接的子网络。在这种情况下，我们能否使用网络分析工具，特别是`blocks`函数，来确定这些具有韧性的子部分，并将它们纳入我们的基础设施计划中？
+OUTPUT:
+[{{'function_name': 'blocks', 'module_name': ''}}]
+</example>
 
 TEXT: {text}"""),
 ],)

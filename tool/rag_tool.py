@@ -1,19 +1,21 @@
 # 读取res/GraphPro-master/doc datasets下的所有json文件
 import asyncio
-import importlib
 import inspect
 import json
 import os
-import pkgutil
 import re
-from typing import Any, Optional, Callable, List
+from collections import deque
 
-import autogen
+import cdlib
+import cdlib.algorithms
 import dotenv
+import graspologic
+import igraph
+import karateclub
+import littleballoffur
+import networkx
 from langchain_community.vectorstores import FAISS
-from langchain_core.tools import StructuredTool
 from langchain_openai import OpenAIEmbeddings
-from pydantic.v1 import BaseModel, Field
 from tqdm.asyncio import tqdm_asyncio
 
 dotenv.load_dotenv()
@@ -289,13 +291,84 @@ faiss_vectorstore=vectorstore.as_retriever(k=5)
 #     description="collect function information",
 # )
 
-def search_documents_in_mutil_keywords(method_and_module_list:list,method_description:str= ""):
-    res = []
-    for mam in method_and_module_list:
-        search_keywords = f"module:{mam['function_name']}, method:{mam['module_name']}, desc:{method_description}"
 
-        module_name = mam['function_name'].lower().strip()
-        method_name = mam['module_name'].strip().split(".")[-1]
+def search_documents_by_help_function(method_name:str, module_name:str=""):
+    packages={
+        "cdlib": cdlib,
+        "graspologic": graspologic,
+        "igraph": igraph,
+        "karateclub": karateclub,
+        "littleballoffur": littleballoffur,
+        "networkx": networkx
+    }
+    if module_name == "" and method_name!="":
+        for p in packages.keys():
+            doc=search_documents_by_help_function(method_name, p)
+            if doc!="":
+                return doc
+
+    if module_name not in packages:
+        return ""
+    module=packages[module_name]
+
+    # 初始化队列并加入根模块
+    queue = deque([(module, module.__name__)])
+
+    path=None
+    mark=set()
+    while queue:
+        current_module, current_path = queue.popleft()
+
+        # 获取当前模块的所有成员
+        try:
+            members = inspect.getmembers(current_module)
+        except Exception as e:
+            print(f"Error occurred while inspect.getmembers({current_path}): {e}")
+            continue
+        # 如果太长了，那就放弃
+        if len(str(current_path).split("."))>=5:
+            continue
+
+        for name, obj in members:
+            if inspect.isfunction(obj) or inspect.isclass(obj):
+                if name == method_name:
+                    path=f"{current_path}.{name}"
+                    break
+
+            # 如果找到了类，检查类中的成员（方法）
+            if inspect.isclass(obj):
+                class_members = inspect.getmembers(obj)
+                for class_member_name, class_member_obj in class_members:
+                    if class_member_name == method_name:
+                        path = f"{current_path}.{name}.{class_member_name}"
+                        break
+
+            if inspect.ismodule(obj) and f"{current_path}.{name}" not in mark:
+                # 如果是子模块，加入队列继续查找
+                mark.add(f"{current_path}.{name}")
+                queue.append((obj, f"{current_path}.{name}"))
+        if path:
+            break
+    if path:
+        from io import StringIO
+        import sys
+        result = StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = result
+        exec(f"help({path})")
+        sys.stdout = old_stdout
+        return result.getvalue()
+    return ""
+
+def search_documents_in_mutil_keywords(method_and_module_list:list,method_description:str):
+    res = []
+    if len(method_and_module_list)==0:
+        method_and_module_list = [{"function_name":"","module_name":""}]
+    for mam in method_and_module_list:
+        search_keywords = f"method:{mam['function_name']}, module:{mam['module_name']}, desc:{method_description}"
+
+        method_name = mam['function_name'].lower().strip().split('.')[-1]
+        module_name = mam['module_name'].lower().strip().split(".")[0]
 
 
 
@@ -306,11 +379,12 @@ def search_documents_in_mutil_keywords(method_and_module_list:list,method_descri
             similarity_score = item[1]  # 相似度得分
 
             key_score = 0
-            if j.get("Section_id", "").lower() == method_name.lower() \
-                    or j.get("Section ID", "").lower() == method_name.lower() \
-                    or "Field List > Methods > " + method_name in j.keys():
-                if module_name == "" or (module_name != "" and j["module"].lower() in module_name):
-                    key_score = 1
+            if method_name != "":
+                if j.get("Section_id", "").lower() == method_name.lower() \
+                        or j.get("Section ID", "").lower() == method_name.lower() \
+                        or "Field List > Methods > " + method_name in j.keys():
+                    if module_name == "" or (module_name != "" and j["module"].lower() in module_name):
+                        key_score = 1
 
             res.append([api_doc_json, similarity_score, key_score])
     return sorted(res, key=lambda x: x[1]+x[2],reverse=True)
@@ -356,165 +430,6 @@ def search_documents(method_name:str="",module_name:str="",method_description:st
 
 
 
-from autogen.agentchat.contrib.vectordb.base import VectorDB, Document, ItemID, QueryResults
-
-
-class MyVectorDB(VectorDB):
-
-    active_collection: Any = None
-    type: str = "MyVectorDB"
-    embedding_function: Optional[Callable[[List[str]], List[List[float]]]] = (
-        lambda text:embedding.embed_query(text)  # embeddings = embedding_function(sentences)
-    )
-
-    def create_collection(self, collection_name: str, overwrite: bool = False, get_or_create: bool = True) -> Any:
-        """
-        Create a collection in the vector database.
-        Case 1. if the collection does not exist, create the collection.
-        Case 2. the collection exists, if overwrite is True, it will overwrite the collection.
-        Case 3. the collection exists and overwrite is False, if get_or_create is True, it will get the collection,
-            otherwise it raise a ValueError.
-
-        Args:
-            collection_name: str | The name of the collection.
-            overwrite: bool | Whether to overwrite the collection if it exists. Default is False.
-            get_or_create: bool | Whether to get the collection if it exists. Default is True.
-
-        Returns:
-            Any | The collection object.
-        """
-        try:
-            vectorstore = FAISS.load_local(local_path, embedding, allow_dangerous_deserialization=True)
-        except Exception as e:
-            print("初始化向量数据库")
-            merged_dot_datasets = create_chunk()
-            texts = [json.dumps(item) for item in merged_dot_datasets]
-            vectorstore = FAISS.from_texts([texts[0]], embedding)
-
-            async def add_texts_async(vectorstore, texts):
-                for text in tqdm_asyncio(texts, desc="Adding texts", total=len(texts)):
-                    await vectorstore.aadd_texts([text])
-
-            # Run the async function
-            asyncio.run(add_texts_async(vectorstore, texts[1:]), )
-            vectorstore.save_local(local_path)
-        return vectorstore
-
-    def retrieve_docs(
-        self,
-        queries: List[str],
-        collection_name: str = None,
-        n_results: int = 10,
-        distance_threshold: float = -1,
-        **kwargs,
-    ) -> QueryResults:
-        """
-        Retrieve documents from the collection of the vector database based on the queries.
-
-        Args:
-            queries: List[str] | A list of queries. Each query is a string.
-            collection_name: str | The name of the collection. Default is None.
-            n_results: int | The number of relevant documents to return. Default is 10.
-            distance_threshold: float | The threshold for the distance score, only distance smaller than it will be
-                returned. Don't filter with it if < 0. Default is -1.
-            kwargs: Dict | Additional keyword arguments.
-
-        Returns:
-            QueryResults | The query results. Each query result is a list of list of tuples containing the document and
-                the distance.
-        """
-        return [[(Document(id=1,content="doc1"), 0.1)]]
-
-
-    def get_collection(self, collection_name: str = None) -> Any:
-        """
-        Get the collection from the vector database.
-
-        Args:
-            collection_name: str | The name of the collection. Default is None. If None, return the
-                current active collection.
-
-        Returns:
-            Any | The collection object.
-        """
-        return self.active_collection
-
-    def delete_collection(self, collection_name: str) -> Any:
-        """
-        Delete the collection from the vector database.
-
-        Args:
-            collection_name: str | The name of the collection.
-
-        Returns:
-            Any
-        """
-        self.active_collection=None
-
-    def insert_docs(self, docs: List[Document], collection_name: str = None, upsert: bool = False, **kwargs) -> None:
-        """
-        Insert documents into the collection of the vector database.
-
-        Args:
-            docs: List[Document] | A list of documents. Each document is a TypedDict `Document`.
-            collection_name: str | The name of the collection. Default is None.
-            upsert: bool | Whether to update the document if it exists. Default is False.
-            kwargs: Dict | Additional keyword arguments.
-
-        Returns:
-            None
-        """
-        pass
-
-    def update_docs(self, docs: List[Document], collection_name: str = None, **kwargs) -> None:
-        """
-        Update documents in the collection of the vector database.
-
-        Args:
-            docs: List[Document] | A list of documents.
-            collection_name: str | The name of the collection. Default is None.
-            kwargs: Dict | Additional keyword arguments.
-
-        Returns:
-            None
-        """
-        pass
-
-    def delete_docs(self, ids: List[ItemID], collection_name: str = None, **kwargs) -> None:
-        """
-        Delete documents from the collection of the vector database.
-
-        Args:
-            ids: List[ItemID] | A list of document ids. Each id is a typed `ItemID`.
-            collection_name: str | The name of the collection. Default is None.
-            kwargs: Dict | Additional keyword arguments.
-
-        Returns:
-            None
-        """
-        pass
-
-
-
-
-    def get_docs_by_ids(
-        self, ids: List[ItemID] = None, collection_name: str = None, include=None, **kwargs
-    ) -> List[Document]:
-        """
-        Retrieve documents from the collection of the vector database based on the ids.
-
-        Args:
-            ids: List[ItemID] | A list of document ids. If None, will return all the documents. Default is None.
-            collection_name: str | The name of the collection. Default is None.
-            include: List[str] | The fields to include. Default is None.
-                If None, will include ["metadatas", "documents"], ids will always be included. This may differ
-                depending on the implementation.
-            kwargs: dict | Additional keyword arguments.
-
-        Returns:
-            List[Document] | The results.
-        """
-        return []
 
 
 
