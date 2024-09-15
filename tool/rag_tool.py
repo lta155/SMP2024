@@ -5,6 +5,7 @@ import json
 import os
 import re
 from collections import deque
+from typing import List
 
 import cdlib
 import cdlib.algorithms
@@ -15,7 +16,9 @@ import karateclub
 import littleballoffur
 import networkx
 from langchain_community.vectorstores import FAISS
+from langchain_core.tools import StructuredTool
 from langchain_openai import OpenAIEmbeddings
+from pydantic.v1 import BaseModel, Field
 from tqdm.asyncio import tqdm_asyncio
 
 dotenv.load_dotenv()
@@ -292,7 +295,7 @@ faiss_vectorstore=vectorstore.as_retriever(k=5)
 # )
 
 
-def search_documents_by_help_function(method_name:str, module_name:str=""):
+def search_documents_by_help_function(method_or_class_name:str, package_name:str= ""):
     packages={
         "cdlib": cdlib,
         "graspologic": graspologic,
@@ -301,15 +304,15 @@ def search_documents_by_help_function(method_name:str, module_name:str=""):
         "littleballoffur": littleballoffur,
         "networkx": networkx
     }
-    if module_name == "" and method_name!="":
+    if package_name == "" and method_or_class_name!= "":
         for p in packages.keys():
-            doc=search_documents_by_help_function(method_name, p)
+            doc=search_documents_by_help_function(method_or_class_name, p)
             if doc!="":
                 return doc
 
-    if module_name not in packages:
+    if package_name not in packages:
         return ""
-    module=packages[module_name]
+    module=packages[package_name]
 
     # 初始化队列并加入根模块
     queue = deque([(module, module.__name__)])
@@ -331,7 +334,7 @@ def search_documents_by_help_function(method_name:str, module_name:str=""):
 
         for name, obj in members:
             if inspect.isfunction(obj) or inspect.isclass(obj):
-                if name == method_name:
+                if name == method_or_class_name:
                     path=f"{current_path}.{name}"
                     break
 
@@ -339,7 +342,7 @@ def search_documents_by_help_function(method_name:str, module_name:str=""):
             if inspect.isclass(obj):
                 class_members = inspect.getmembers(obj)
                 for class_member_name, class_member_obj in class_members:
-                    if class_member_name == method_name:
+                    if class_member_name == method_or_class_name:
                         path = f"{current_path}.{name}.{class_member_name}"
                         break
 
@@ -359,8 +362,29 @@ def search_documents_by_help_function(method_name:str, module_name:str=""):
         sys.stdout = old_stdout
         return result.getvalue()
     return ""
+def search_documents_by_help_function_with_pretreatment(method_or_class_name:str, package_name:str):
+    if package_name not in ['cdlib','igraph','littleballoffur','graspologic','karateclub','networkx','']:
+        return "Invalid package name"
+    if "." in method_or_class_name:
+        return "Invalid function name, just input function or class name without '.' "
+    res = search_documents_by_help_function(method_or_class_name,package_name)
+    if res == "":
+        return "No document found"
+    return res
 
-def search_documents_in_mutil_keywords(method_and_module_list:list,method_description:str):
+
+class SearchFunctionInfo(BaseModel):
+    method_or_class_name: str = Field(description="the name of the function or the class to be queried, such as 'freeze' or 'GraphBase'")
+    package_name:str=Field(default= "", description="python package name, it can only be 'cdlib' or 'igraph' or 'littleballoffur' or 'graspologic' or 'karateclub' or 'networkx' or '")
+function_searcher=StructuredTool.from_function(
+    func=search_documents_by_help_function_with_pretreatment,
+    name="search_documents",
+    args_schema=SearchFunctionInfo,
+    description="You can look up the usage, parameters, examples, etc., of a function or a class method.",
+)
+
+
+def search_documents_in_mutil_keywords(method_and_module_list:list,method_description:str,k=10):
     res = []
     if len(method_and_module_list)==0:
         method_and_module_list = [{"function_name":"","module_name":""}]
@@ -372,7 +396,7 @@ def search_documents_in_mutil_keywords(method_and_module_list:list,method_descri
 
 
 
-        l = vectorstore.similarity_search_with_relevance_scores(search_keywords, k=10)
+        l = vectorstore.similarity_search_with_relevance_scores(search_keywords, k=k)
         for item in l:
             api_doc = item[0].page_content.lower()
             j=api_doc_json = json.loads(item[0].page_content)
@@ -427,8 +451,6 @@ def search_documents(method_name:str="",module_name:str="",method_description:st
         return ["no module found"]
     else:
         return ["no data found"]
-
-
 
 
 

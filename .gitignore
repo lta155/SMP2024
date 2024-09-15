@@ -107,7 +107,7 @@ ipython_config.py
 
 
 .env
-.langchain.db
+.langchain.db.bk
 res_Preliminary
 code
 Dockerfile
@@ -122,4 +122,5 @@ agentchat_RetrieveChat*
 OAI_CONFIG_LIST
 .cache
 tmp
-data
+data/Final_TestSet
+data/GraphPro-master

@@ -1,14 +1,15 @@
-import pandas as pd
-import re, json
-
-from autogen import ConversableAgent
+import json
+import re
 from pathlib import Path
+from typing import Annotated
 
-import tempfile
-
+import pandas as pd
 from autogen import ConversableAgent
 from autogen.coding import LocalCommandLineCodeExecutor
+
 from prompt import CONVER_PROMPT
+
+
 # Create a temporary directory to store the code files.
 temp_dir = Path("./code")#tempfile.TemporaryDirectory()
 
@@ -68,7 +69,7 @@ code_writer_agent = ConversableAgent(
 
 # Create a local command line code executor.
 executor = LocalCommandLineCodeExecutor(
-    timeout=30,  # Timeout for each code execution in seconds.
+    timeout=60*5,  # Timeout for each code execution in seconds.
     work_dir=temp_dir.name,  # Use the temporary directory to store the code files.
 )
 
@@ -78,7 +79,8 @@ executor = LocalCommandLineCodeExecutor(
 # Create an agent with code executor configuration.
 code_executor_agent = ConversableAgent(
     "code_executor_agent",
-    llm_config=False,  # Turn off LLM for this agent.
+    llm_config=False,#llm_config,  # Turn off LLM for this agent.
+    system_message="You are a helpful AI Assistant. use tool to get api doc",
     code_execution_config={"executor": executor},  # Use the local command line code executor.
     human_input_mode="NEVER",
     is_termination_msg=lambda msg: "TERMINATE" in msg.get("content", ""),
@@ -149,6 +151,27 @@ Below is the problem content:
 
 {}"""
 
+
+# from autogen import register_function
+# from tool.rag_tool import search_documents_by_help_function
+# def query_document(package_name:Annotated[str, "python package name, it can only be 'cdlib' or 'igraph' or 'littleballoffur' or 'graspologic' or 'karateclub' or 'networkx' or '"],
+#                    function_name:Annotated[str, "the name of the function or the method of the class to be queried, 'freeze'"])\
+#         -> Annotated[str, "function or class document"]:
+#     if package_name not in ['cdlib','igraph','littleballoffur','graspologic','karateclub','networkx']:
+#         return "Invalid package name"
+#     res = search_documents_by_help_function(function_name,package_name)
+#     if res == "":
+#         return "No document found"
+#     return res
+#
+#
+# register_function(
+#     query_document,
+#     caller=code_writer_agent,  # The assistant agent can suggest calls to the calculator.
+#     executor=code_executor_agent,  # The user proxy agent can execute the calculator calls.
+#     name="query_document",  # By default, the function name is used as the tool name.
+#     description="You can look up the usage, parameters, examples, etc., of a function or a class method.",  # A description of the tool.
+# )
 
 
 d_template = {

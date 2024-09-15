@@ -1,23 +1,15 @@
-import re
-from functools import reduce
-
+import json
 import os
 import re
 from functools import reduce
-from typing import List, Optional, Any
 
 import dotenv
-import requests
-from langchain_core.callbacks import CallbackManagerForLLMRun
-from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import BaseMessage, AIMessage
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
-from langchain_core.outputs import ChatResult, ChatGeneration
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_openai import ChatOpenAI
-from openai import OpenAI
-from typing_extensions import override
+
+from prompt import CONVER_PROMPT2
 
 dotenv.load_dotenv()
 
@@ -89,6 +81,11 @@ class CodeOutputParser(StrOutputParser):
     def parse(self, text: str) -> str:
         code=reduce(lambda a,b:a+"\n\n"+b,re.findall(r'```python(.*?)```', text, re.DOTALL))
         return code
+
+class JsonOutputParser(StrOutputParser):
+    def parse(self, text: str) -> str:
+        j=reduce(lambda a,b:a+"\n\n"+b,re.findall(r'```json(.*?)```', text, re.DOTALL))
+        return json.loads(j)
 
 class BooleanOutputParser(StrOutputParser):
     def parse(self, text: str) -> bool:
@@ -213,6 +210,34 @@ extract_graph_algorithm_prompt=ChatPromptTemplate.from_messages([
 ])
 extract_graph_algorithm_runnable=extract_graph_algorithm_prompt|gpt4o|StrOutputParser()
 
+plan_prompt=ChatPromptTemplate.from_messages([
+    ("system",CONVER_PROMPT2),
+    ("human","{text}")
+])
+extract_plan_prompt=ChatPromptTemplate.from_messages([
+    ("system","you job is to full extract the plan of the text,and return it as a json. Then we can search for the function we need based on each step"),
+    ("human","""
+<example>
+input:
+#plan 
+1. step a
+2. step b
+3. print a number 
+output:
+```json
+{{
+    "0":"step a",
+    "1":"step b",
+    "2":"print a number"
+}}
+```
+</example>
+
+input:
+{text2}
+    """)
+])
+plan_runnable={"text":RunnablePassthrough()}|plan_prompt|gpt4o|{"text2":StrOutputParser()}|extract_plan_prompt|gpt4o|JsonOutputParser()
 
 generating_code_prompt=ChatPromptTemplate.from_messages([
     ("system","你是一个图算法专家助手，擅长执行图算法任务，在一个代码快里编写完整的可运行的python代码，此print函数输出问题答案并保留2位有效数字，不能绘制任何图片，代码尽可能精简，生成的例子需要尽可能简单。"),
@@ -278,4 +303,32 @@ judge_runnable_bool= judge_prompt | gpt4o | BooleanOutputParser()
 judge_runnable_text= judge_prompt | gpt4o | StrOutputParser()
 
 
+rerank_prompt=ChatPromptTemplate.from_messages([
+    ("system","You are a professional, authentic code reranker. you job is ")
+])
 
+extract_algorithm_prompt= ChatPromptTemplate.from_messages([
+    ("system","""You are a text fragment extractor. Your task is to extract text snippets related to graph algorithms.
+
+Follow these rules:
+1. The text fragments should be as complete as possible.
+2. If the task explicitly specifies the function and package to use, include the function name and package name.
+3. If the task does not explicitly specify the function name but indicates graph algorithm metrics or algorithm names, extract the relevant information.
+4. There will be 1 to 3 graph algorithms per task.
+5. All information must come from user input; you cannot add any extra information.
+6. Each row represents an extraction.
+"""),
+    ("human","""
+<example>
+input:
+Your query would look something like this: 
+Using the software 'littleballoffur18', can we generate a subgraph using CommunityStructureExpansionSampler function taking into consideration five key nodes (relationships)? Further, could you inform if there are any 'bridges' within this sampled subgraph? Remember to mention the gml file you took the original graph from in your response.
+output:
+1. Using the software 'littleballoffur18', can we generate a subgraph using CommunityStructureExpansionSampler function taking into consideration five key nodes (relationships)?
+2. Further, could you inform if there are any 'bridges' within this sampled subgraph? 
+</example>
+
+input:
+{text}""")
+])
+extract_algorithm_runnable= {"text":RunnablePassthrough()}|extract_algorithm_prompt | gpt4o | StrOutputParser()
