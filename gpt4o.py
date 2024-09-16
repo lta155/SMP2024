@@ -97,6 +97,7 @@ template_cal = """The following is a problem of type "calculations". Your task i
     - If the problem explicitly requires multiple numeric answers, your code must print these values separated by commas.
     - If the problem requires a descriptive or analytic answer rather than a numeric one, your code must print the descriptive content before the answer.
     - For any numeric answers, if the values are decimals, they should be rounded to two decimal places.
+    - Do not draw any images.Use print() function to output the results you need.
 
 Below is the problem content:
 
