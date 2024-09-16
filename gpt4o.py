@@ -106,7 +106,6 @@ Below is the problem content:
 template_tof = """The following is a problem of the type "True/False" Your task is to think through the problem step by step, write the necessary code to solve it, execute the code, and extract the answer from the output. 
 
     - The answer must be "TRUE" or "FALSE".
-    - If the problem requires you to make multiple judgments, your code must print add 'specific question:' before the corresponding judgments.
 
 Below is the problem content:
 
@@ -180,11 +179,11 @@ d_template = {
     'calculations': template_cal,
     'True/False': template_tof,
     'draw': template_draw,
-    'multi(True/False, calculations)': template_tof_cal,
-    'multi(True/False, draw)': template_tof_draw,
-    'multi(calculations, True/False)': template_tof_cal,
-    'multi(calculations, draw)': template_cal_draw,
-    'multi(draw, True/False)':template_tof_draw,
+    'multi(True/False, calculations)': template_tof_cal, # ✅
+    'multi(True/False, draw)': template_tof_draw, # ✅
+    'multi(calculations, True/False)': template_tof_cal, # ✅
+    'multi(calculations, draw)': template_cal_draw, # ✅ ❌
+    'multi(draw, True/False)':template_tof_draw, # ✅
     }
 
 if __name__ == '__main__':
