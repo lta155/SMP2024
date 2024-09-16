@@ -115,7 +115,7 @@ Below is the problem content:
 template_draw = """The following is a problem of the type "draw" Your task is to think through the problem step by step, write the necessary code to complete the draw task.
 
     - If the problem requires you to draw an image, please include the code for drawing the image in the code.
-
+    - The type of problem is "draw", so don't forget to add import matplotlib.pyplot as plt and plt.show() in the code.
 Below is the problem content:
 
 {}"""
@@ -147,6 +147,7 @@ template_cal_draw = """The following is a problem of type "multi(calculations, d
     - If the problem explicitly requires multiple numeric answers, your code must print these values separated by commas.
     - If the problem requires a descriptive or analytic answer rather than a numeric one, your code print the descriptive content before the answer.
     - For any numeric answers, if the values are decimals, they should be rounded to two decimal places.
+    - The type of problem is "multi(calculations, draw)", so don't forget to add import matplotlib.pyplot as plt and plt.show() in the code.
 
 Below is the problem content:
 
@@ -187,10 +188,11 @@ d_template = {
     }
 
 if __name__ == '__main__':
-    for i in range(22, 23):
+    for i in range(385, 386):
         print('Problem: {}\n'.format(i))
 
         content = d_template[df_type.loc[i].problem_type].format(df_test.loc[i].question)
+        print(content)
         filenames = extract_filenames(content)
         for filename in filenames:
             content = content.replace(filename, add_path(filename, data_path / 'Final_TestSet/data'))
@@ -201,7 +203,7 @@ if __name__ == '__main__':
             summary_method='reflection_with_llm',
             summary_args=dict(summary_prompt='only return the code output'),
         )
-
+        print(chat_result.summary)
         full_res_path = Path('./full_results/') / 'stage1' / model_name
         full_res_path.mkdir(parents=True, exist_ok=True)
         with open(full_res_path / '{}.json'.format(i), 'w') as f:
