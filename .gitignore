@@ -107,7 +107,7 @@ ipython_config.py
 
 
 .env
-.langchain.db
+.langchain.db.bk
 res_Preliminary
 code
 Dockerfile
@@ -116,3 +116,11 @@ preliminary_gpt4o.py
 autogen_cache
 config.json
 full_results
+test*
+faiss_vectorstore
+agentchat_RetrieveChat*
+OAI_CONFIG_LIST
+.cache
+tmp
+data/Final_TestSet
+data/GraphPro-master
