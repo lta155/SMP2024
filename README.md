@@ -1,5 +1,10 @@
 # SMP 2024大模型图分析挑战赛
 此项目为Robo Space团队在[SMP 2024大模型图分析挑战赛](https://tianchi.aliyun.com/competition/entrance/532253)复赛的解决方案。
+
+<div style="text-align: center;">
+<img src="./img/smp.png" alt="solution" height="300">
+</div>
+
 ## 代码结构
 data: 存放数据集，可从该[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取
 
