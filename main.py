@@ -1,22 +1,18 @@
 import multiprocessing
-import os
 
 from autogen import Cache
-import dotenv
 from tqdm import tqdm
 
-from gpt4o import *
+from tool.autogen_tool import *
 
 dotenv.load_dotenv()
 
-file_name="SMP_240915_answer_1"
+file_name="SMP_answer"
 # sign=True
 def run(id_and_content: str):
-    cache_seed = 1
-    file_name = "SMP_240915_answer_1"
+    cache_seed = 2
+    file_name = "SMP_answer"
     ID, content = id_and_content.split("@####@")
-    # agentops.init(auto_start_session=False)
-    # agentops.start_session(tags=[file_name, "ID:"+ID])
     try:
         # Use DiskCache as cache
         with Cache.disk(cache_path_root="./autogen_cache", cache_seed=cache_seed) as cache:
@@ -28,7 +24,6 @@ def run(id_and_content: str):
                 cache=cache,
                 silent=True,
             )
-        # agentops.end_session('Success')
         code = ""
         for i in range(len(chat_result.chat_history) - 1, 0, -1):
             l = extract_python_code(chat_result.chat_history[i]['content'])
@@ -39,10 +34,8 @@ def run(id_and_content: str):
         answer = chat_result.summary
         if isinstance(answer, dict):
             answer = answer['content']
-        # item['chat_history']=chat_result.chat_history
         return ID+"@####@"+code+"@####@"+answer
     except Exception as e:
-        # agentops.end_session('Failure')
         print(f"Error processing item {ID}: {str(e)}")
         return ID+"@####@"+f"Error processing item {ID}: {str(e)}"
 
@@ -65,7 +58,7 @@ if __name__ == "__main__":
     FROM,TO=0,512
     with open('data/Final_TestSet/Final_TestSet.json', 'r', encoding='utf-8') as f:
         dataset = json.load(f)[:]
-    with open('data/id_and_content_0916_1.json', 'r', encoding='utf-8') as f:
+    with open('data/id_and_content.json', 'r', encoding='utf-8') as f:
         id_and_content = json.load(f)[:TO]
     # 判断文件存在
     if os.path.exists(f'data/{file_name}.json'):
@@ -75,10 +68,11 @@ if __name__ == "__main__":
         answers=[]
 
     print("预处理")
-    _id=[i["ID"] for i in answers if "answer" in i and i["answer"]!=""]
+    _id=[i["ID"] for i in answers if "code" in i and i["code"]!=""]
     id_and_content=[str(i["ID"] )+"@####@"+i["content"] for i in id_and_content if i["ID"] not in _id]
 
     print(f"运行,共{len(id_and_content)}")
+    print([i.split("@####@")[0] for i in  id_and_content][:20])
     id_and_code_and_answer=run_concurrent(id_and_content)
     id_and_code_and_answer_json=[]
     for item in id_and_code_and_answer:
@@ -100,7 +94,7 @@ if __name__ == "__main__":
 
     print("添加结果")
     final_answer=[]
-    for dataset_item in dataset:
+    for dataset_item in dataset[:]:
         tmp={"ID": dataset_item["ID"], "question":dataset_item["question"],"code":"","answer":""}
         for old_answer in answers:
             if old_answer["ID"]==dataset_item["ID"]:

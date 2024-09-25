@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from pathlib import Path
 from typing import Annotated
@@ -7,11 +8,12 @@ import pandas as pd
 from autogen import ConversableAgent
 from autogen.coding import LocalCommandLineCodeExecutor
 
-from prompt import CONVER_PROMPT
 
+import dotenv
+dotenv.load_dotenv()
 
 # Create a temporary directory to store the code files.
-temp_dir = Path("./code")#tempfile.TemporaryDirectory()
+temp_dir = Path("../code")#tempfile.TemporaryDirectory()
 
 model_name = "gpt-4o"
 
@@ -50,12 +52,29 @@ def extract_python_code(text):
     matches = re.findall(pattern, text, re.DOTALL)
     return [match.strip() for match in matches]
 
-with open('config.json', 'r') as f:
-    config = json.load(f)
-llm_config = get_llm_config(model_name, **config[model_name])
+
+llm_config = get_llm_config(model_name,
+                            api_key=os.getenv('API_KEY'),
+                            base_url=os.getenv("BASE_URL"))
 
 
-
+CONVER_PROMPT = """You are a helpful AI assistant.
+Solve tasks using your coding and language skills.
+In the following cases, suggest python code (in a python coding block) or shell script (in a sh coding block) for the user to execute.
+    1. When you need to collect info, use the code to output the info you need, for example, browse or search the web, download/read a file, print the content of a webpage or a file, get the current date/time, check the operating system. After sufficient info is printed and the task is ready to be solved based on your language skill, you can solve the task by yourself.
+    2. When you need to perform some task with code, use the code to perform the task and output the result. You can import the packages of 'cdlib', 'igraph', 'littleballoffur', 'graspologic', 'karateclub', and 'networkx'. Finish the task smartly.
+    3. When you need to implement graph algorithms, you must use existing graph algorithm functions and cannot implement them yourself.
+When generating code, you must pay attention to the following situations.
+    1. When reading a file, do not use Python's built-in open function. Instead, use the function from the package mentioned in item 2 above, such as `nx.read_sparse6`.
+    2. If the problem statement does not provide a file name but requires a graph for computation or analysis, please generate a graph that fits the context of the problem. Then, perform the required computation or analysis based on the entropy of the generated graph.
+    3. You are allowed to install Python packages using pip, but you are prohibited from using Docker and any bash commands that might modify files, such as rm, mv, etc.
+Solve the task step by step if you need to. If a plan is not provided, explain your plan first. Be clear which step uses code, and which step uses your language skill.
+When using code, you must indicate the script type in the code block. The user cannot provide any other feedback or perform any other action beyond executing the code you suggest. The user can't modify your code. So do not suggest incomplete code which requires users to modify. Don't use a code block if it's not intended to be executed by the user.
+If you want the user to save the code in a file before executing it, put # filename: <filename> inside the code block as the first line. Don't include multiple code blocks in one response. Do not ask users to copy and paste the result. Instead, use 'print' function for the output when relevant. Check the execution result returned by the user.
+If the result indicates there is an error, fix the error and output the code again. Suggest the full code instead of partial code or code changes. If the error can't be fixed or if the task is not solved even after the code is executed successfully, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.
+When you find an answer, verify the answer carefully, make sure you answer all the questions as required. Include verifiable evidence in your response if possible.
+Reply "TERMINATE" in the end when everything is done.
+"""
 
 code_writer_agent = ConversableAgent(
     "code_writer_agent",
@@ -87,9 +106,7 @@ code_executor_agent = ConversableAgent(
 )
 
 
-data_path = Path(config['data_path'])
-df_test = pd.read_json(data_path / 'Final_TestSet/Final_TestSet.json').set_index("ID")
-df_type = pd.read_json(data_path / 'Final_Example.json').set_index("ID")
+
 
 template_cal = """The following is a problem of type "calculations". Your task is to think through the problem step by step, write the necessary code to solve it, execute the code, and extract the answer from the output.
 
@@ -187,6 +204,10 @@ d_template = {
     }
 
 if __name__ == '__main__':
+    data_path = Path("./data")
+    df_test = pd.read_json(data_path / 'Final_TestSet/Final_TestSet.json').set_index("ID")
+    df_type = pd.read_json(data_path / 'Final_Example.json').set_index("ID")
+
     for i in range(385, 386):
         print('Problem: {}\n'.format(i))
 
