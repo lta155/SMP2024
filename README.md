@@ -19,7 +19,10 @@
 │   │   ├── doc datasets/（API 文档中的数据集文件夹）
 │   │   │   ├── cdlib.json（示例数据文件）
 │   │   │   └── ...（其他文档和数据集）
-│   └── ...（其他相关文档或中间结果、最终结果）
+│   ├── Final_TestSet/（测试集文件夹）
+│   │   ├── data/
+│   │   └── Final_TestSet.json (测试集问题)
+│   └── ...（中间结果、最终结果）
 │
 ├── tool/（工具类文件目录）
 │   ├── langchain_tool.py（基于 LangChain 构建的工作流相关代码，主要是 prompt 和 runnable ）
@@ -33,14 +36,13 @@
 ├── main.py（主脚本，读取 prompt 文件，使用 autogen 进行 10 并发推理并生成答案）
 │
 ├── requirements.txt
-
 ```
 
 ## 运行步骤
 1. 创建环境并安装package
 2. 从[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取GraphPro-master.zip，解压后放到项目的data目录下。
-3. 从[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取Final_TestSet.zip，解压后把data下所有文件（各种gml等文件）复制到项目的code目录下。
+3. 从[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取Final_TestSet.zip，解压后把data下所有文件（各种gml等文件）移动到项目的code目录下。
 4. 把`.env.tamplate`重命名为`.env`，并填入gpt4o的密钥信息 
 5. 运行`data_search.ipynb`文件，第一次运行时，会建立向量数据库。此文档会产生一个中间文件`data/id_and_content.json`。 
-6. 运行`main.py`，读取prompt文件，输出推理结果，到`data/SMP_answer.json`
-7. 再次运行`main.py`，每次运行，`main.py`都会检查`data/SMP_answer.json`，并对因超时/网络超时等原因造成没有输出结果的prompt，进行重新处理。
+6. 运行`main.py`，读取中间文件，输出推理结果，到`data/SMP_answer.json`
+7. 再次运行`main.py`，每次运行，`main.py`都会检查`data/SMP_answer.json`，并对因运行中断/网络超时等原因造成没有输出结果的问题，进行重新推理。
