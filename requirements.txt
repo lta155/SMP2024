@@ -32,4 +32,8 @@ similarity-index-of-label-graph==2.0.1
 tenacity==8.3.0
 thresholdclustering==1.1
 tqdm==4.66.4
-pyautogen
+
+pyautogen==0.2.35
+langchain==0.2.13
+langchain_community==0.2.12
+langchain_openai==0.2.0

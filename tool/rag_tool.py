@@ -258,8 +258,8 @@ def get_merged_dot_datasets():
 
 embedding=OpenAIEmbeddings(
     model="text-embedding-3-large",
-    api_key=os.getenv("BURN_HAIR_OPENAI_API_KEY_TEST"),#"QUEYU_OPENAI_API_KEY"),
-    base_url=os.getenv("BURN_HAIR_URL")#"QUEYU_OPENAI_RUL")
+    api_key=os.getenv("API_KEY"),#"QUEYU_OPENAI_API_KEY"),
+    base_url=os.getenv("BASE_URL")#"QUEYU_OPENAI_RUL")
 )
 local_path= "faiss_vectorstore"
 try:
@@ -295,7 +295,7 @@ faiss_vectorstore=vectorstore.as_retriever(k=5)
 # )
 
 
-def search_documents_by_help_function(method_or_class_name:str, package_name:str= ""):
+def search_documents_by_help_function(method_or_class_name:str, package_name:str= "",contain_key:str=""):
     packages={
         "cdlib": cdlib,
         "graspologic": graspologic,
@@ -334,7 +334,7 @@ def search_documents_by_help_function(method_or_class_name:str, package_name:str
 
         for name, obj in members:
             if inspect.isfunction(obj) or inspect.isclass(obj):
-                if name == method_or_class_name:
+                if name == method_or_class_name and contain_key in current_path:
                     path=f"{current_path}.{name}"
                     break
 
@@ -342,7 +342,7 @@ def search_documents_by_help_function(method_or_class_name:str, package_name:str
             if inspect.isclass(obj):
                 class_members = inspect.getmembers(obj)
                 for class_member_name, class_member_obj in class_members:
-                    if class_member_name == method_or_class_name:
+                    if class_member_name == method_or_class_name and contain_key in current_path:
                         path = f"{current_path}.{name}.{class_member_name}"
                         break
 

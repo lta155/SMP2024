@@ -108,6 +108,7 @@ ipython_config.py
 
 .env
 .langchain.db.bk
+.langchain.db
 res_Preliminary
 code
 Dockerfile

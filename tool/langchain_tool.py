@@ -17,8 +17,8 @@ dotenv.load_dotenv()
 
 
 gpt4o=ChatOpenAI(
-    api_key=os.getenv("WLAI_API_KEY"),
-    base_url=os.getenv("WLAI_BASE_URL"),
+    api_key=os.getenv("API_KEY"),
+    base_url=os.getenv("BASE_URL"),
     model="gpt-4o",
     temperature=0.3,
 )

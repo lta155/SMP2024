@@ -40,8 +40,8 @@
 
 ## 运行步骤
 1. 创建环境并安装package
-2. 从[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取GraphPro-master.zip，解压后放到项目的data目录下。
-3. 从[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取Final_TestSet.zip，解压后把data下所有文件（各种gml等文件）移动到项目的code目录下。
+2. 从[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取GraphPro-master.zip和Final_TestSet.zip，解压后放到项目的data目录下。
+3. 从[页面](https://tianchi.aliyun.com/competition/entrance/532253/information)获取Final_TestSet.zip，解压后把data下所有文件（各种gml等文件）复制到项目的code目录下。
 4. 把`.env.tamplate`重命名为`.env`，并填入gpt4o的密钥信息 
 5. 运行`data_search.ipynb`文件，第一次运行时，会建立向量数据库。此文档会产生一个中间文件`data/id_and_content.json`。 
 6. 运行`main.py`，读取中间文件，输出推理结果，到`data/SMP_answer.json`
