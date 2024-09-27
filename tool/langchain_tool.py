@@ -9,10 +9,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_openai import ChatOpenAI
 
-from prompt import CONVER_PROMPT2
 
 dotenv.load_dotenv()
-
 
 
 
@@ -209,35 +207,6 @@ extract_graph_algorithm_prompt=ChatPromptTemplate.from_messages([
     ("human","""{text}""")
 ])
 extract_graph_algorithm_runnable=extract_graph_algorithm_prompt|gpt4o|StrOutputParser()
-
-plan_prompt=ChatPromptTemplate.from_messages([
-    ("system",CONVER_PROMPT2),
-    ("human","{text}")
-])
-extract_plan_prompt=ChatPromptTemplate.from_messages([
-    ("system","you job is to full extract the plan of the text,and return it as a json. Then we can search for the function we need based on each step"),
-    ("human","""
-<example>
-input:
-#plan 
-1. step a
-2. step b
-3. print a number 
-output:
-```json
-{{
-    "0":"step a",
-    "1":"step b",
-    "2":"print a number"
-}}
-```
-</example>
-
-input:
-{text2}
-    """)
-])
-plan_runnable={"text":RunnablePassthrough()}|plan_prompt|gpt4o|{"text2":StrOutputParser()}|extract_plan_prompt|gpt4o|JsonOutputParser()
 
 generating_code_prompt=ChatPromptTemplate.from_messages([
     ("system","你是一个图算法专家助手，擅长执行图算法任务，在一个代码快里编写完整的可运行的python代码，此print函数输出问题答案并保留2位有效数字，不能绘制任何图片，代码尽可能精简，生成的例子需要尽可能简单。"),
