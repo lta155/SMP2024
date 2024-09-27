@@ -46,3 +46,25 @@
 5. 运行`data_search.ipynb`文件，第一次运行时，会建立向量数据库。此文档会产生一个中间文件`data/id_and_content.json`。 
 6. 运行`main.py`，读取中间文件，输出推理结果，到`data/SMP_answer.json`
 7. 再次运行`main.py`，每次运行，`main.py`都会检查`data/SMP_answer.json`，并对因运行中断/网络超时等原因造成没有输出结果的问题，进行重新推理。
+
+## 赛题理解
+本比赛为api调用赛题，需要根据给定的问题，调用api，生成答案。包含以下特点：
+1. 使用的gpt4o内包含比赛要求的api，但是对api的使用并不正确，时常会发生import错误，参数错误等。
+2. 赛题使用1~2个核心api，且推理并不复杂。
+3. 题目总是会明确指出使用的api名称，或是使用的算法名称。
+4. 难以验证题目结果的正确性。
+5. 比赛的文档和help函数的结果一直，可以直接使用help函数来获取文档。
+所以根据比赛理解，使用RAG为主，推理为辅的策略。给gpt4o于准确，完整的prompt，希望gpt4o能一次性生成准确代码，而不是依靠之后的reflection。
+
+## 程序架构
+可以通过两个核心文件“data_search.ipynb”和“main.py”来理解整个程序。“data_search.ipynb”用于生成prompt，“main.py”用于推理和修复代码错误。
+### data_search.ipynb
+![img.png](img/img.png)
+### main.py
+![img_1.png](img/img_1.png)
+
+## tricks
+1. 在抽取题目的重包括的函数时，使用是voting，即多次查询，然后聚合结果，提升准确率。
+2. 使用递归，可以查询函数在包中的位置，提取出函数完整的路径，就可以使用help函数。
+3. 对于api文档，召回率比准确率更重要，引入无关文档，会提升tokens使用，但并不会影响code生成。
+4. 使用框架自带的缓存，可以避免重复推理。
